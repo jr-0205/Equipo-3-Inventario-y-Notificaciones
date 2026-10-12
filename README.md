@@ -21,6 +21,12 @@ docker compose ps
 ```
 Abre `http://localhost:20004`.
 
+### Integración con las API del Equipo 1
+- Clientes: `http://IP-DEL-EQUIPO-1:3001/clientes` y `http://IP-DEL-EQUIPO-1:3001/clientes/:id`.
+- Productos: `http://IP-DEL-EQUIPO-1:3002/productos` y `http://IP-DEL-EQUIPO-1:3002/productos/:id`.
+- Campus Core debe apuntar directamente a los puertos `3001` y `3002` y usar las rutas `/clientes` y `/productos`. No usar `/gateway/clientes` ni `/gateway/productos` para las API directas descritas por el Equipo 1.
+- En la sección Conexiones, configura la IP real del equipo que aloja esos servicios. Comprueba primero las rutas desde el navegador o con `Invoke-RestMethod`.
+
 ### Acceso desde otra computadora de la red
 - Abre Campus Core usando la IP LAN del equipo donde corre Docker, por ejemplo `http://192.168.1.234:20004` (usa la IP real de ese equipo).
 - El frontend integrado calcula automáticamente las direcciones de Inventario (`:20002`) y Notificaciones (`:20003`) a partir del hostname con el que se abrió la página.
