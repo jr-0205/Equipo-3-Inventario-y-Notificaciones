@@ -16,8 +16,25 @@
 <script>
 window.addEventListener('error',e=>{const el=document.getElementById('toast');if(el){el.textContent='Error de JavaScript: '+(e.message||'error desconocido');el.className='toast show error'}});
 window.addEventListener('unhandledrejection',e=>{const el=document.getElementById('toast');if(el){el.textContent='Error de operación: '+(e.reason?.message||String(e.reason||'error desconocido'));el.className='toast show error'}});
-const DEFAULT_API={orders:'http://localhost:3003',clients:'http://localhost:3003',products:'http://localhost:3003',payments:'http://localhost:3003',inventory:'http://localhost:20002',notifications:'http://localhost:20003'};
-function readApi(){try{return {...DEFAULT_API,...JSON.parse(localStorage.getItem('campus-core-api')||'{}')}}catch{return {...DEFAULT_API}}}
+const API_HOST=window.location.hostname||'localhost';
+const DEFAULT_API={orders:'http://localhost:3003',clients:'http://localhost:3003',products:'http://localhost:3003',payments:'http://localhost:3003',inventory:`http://${API_HOST}:20002`,notifications:`http://${API_HOST}:20003`};
+function readApi(){
+  let saved={};
+  try{saved=JSON.parse(localStorage.getItem('campus-core-api')||'{}')||{}}catch{}
+  // Si Campus Core se abre desde otra computadora, localhost apunta al navegador
+  // y no al equipo que ejecuta Docker. Actualiza solo las API del Equipo 3;
+  // las direcciones personalizadas de los gateways de otros equipos se conservan.
+  if(API_HOST!=='localhost'&&API_HOST!=='127.0.0.1'){
+    for(const key of ['inventory','notifications']){
+      if(typeof saved[key]==='string'){
+        try{const u=new URL(saved[key]);if(['localhost','127.0.0.1','::1'].includes(u.hostname)){u.hostname=API_HOST;saved[key]=u.toString().replace(/\\/$/,'')}}catch{}
+      }
+    }
+  }
+  const api={...DEFAULT_API,...saved};
+  try{localStorage.setItem('campus-core-api',JSON.stringify(api))}catch{}
+  return api;
+}
 let API=readApi();
 const endpoint=(key,path)=>API[key].replace(/\/$/,'')+path;
 function syncConnectionInputs(){Object.entries(API).forEach(([k,v])=>{const el=document.querySelector('#url-'+k);if(el)el.value=v})}
