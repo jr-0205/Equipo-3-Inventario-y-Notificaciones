@@ -1,0 +1,8 @@
+{
+  "name": "team3-inventory-service",
+  "version": "1.0.0",
+  "description": "Microservicio REST de inventario",
+  "main": "src/server.js",
+  "scripts": { "start": "node src/server.js" },
+  "dependencies": { "cors": "^2.8.5", "express": "^4.21.2", "mysql2": "^3.12.0" }
+}
