@@ -21,6 +21,17 @@ docker compose ps
 ```
 Abre `http://localhost:20004`.
 
+### Integración con las API del Equipo 1
+- Campus Core consulta Clientes y Productos a través de un proxy Nginx del mismo origen (`/api/clientes` y `/api/productos`). Esto evita que el navegador bloquee las llamadas por CORS.
+- En `nginx.conf`, la IP destino del Equipo 1 está configurada como `192.168.1.148`, con los puertos `3001` (Clientes) y `3002` (Productos). Si cambia la IP del Equipo 1, actualízala en ambos bloques `proxy_pass`.
+- No hace falta abrir los puertos 3001/3002 desde el navegador del usuario; el contenedor Nginx del Equipo 3 debe poder alcanzar esa IP y esos puertos por la red.
+
+### Acceso desde otra computadora de la red
+- Abre Campus Core usando la IP LAN del equipo donde corre Docker, por ejemplo `http://192.168.1.234:20004` (usa la IP real de ese equipo).
+- El frontend integrado calcula automáticamente las direcciones de Inventario (`:20002`) y Notificaciones (`:20003`) a partir del hostname con el que se abrió la página.
+- Si el navegador ya tenía direcciones antiguas guardadas, el frontend migra `localhost`/`127.0.0.1` para esos dos servicios; conserva las direcciones personalizadas de los gateways de los otros equipos.
+- Si no conecta, permite los puertos `20002`, `20003` y `20004` en el firewall del equipo servidor y verifica `docker compose ps`.
+
 ## Pruebas de salud
 ```powershell
 Invoke-RestMethod http://localhost:20002/health
