@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Equipo 3 | Inventario y notificaciones</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div><p class="eyebrow">EQUIPO 3 · SISTEMA DE MICROSERVICIOS</p><h1>Inventario y notificaciones</h1><p class="subtitle">Administra productos y revisa los eventos del sistema desde un solo lugar.</p></div>
+    <span class="badge">Docker · MySQL · REST API</span>
+  </header>
+  <main>
+    <section class="status-grid" aria-label="Estado de servicios">
+      <article class="status-card"><span class="dot" id="inventory-dot"></span><div><small>Servicio de inventario</small><strong id="inventory-status">Comprobando…</strong><a href="http://localhost:20002/health" target="_blank" rel="noreferrer">API · puerto 20002 ↗</a></div></article>
+      <article class="status-card"><span class="dot" id="notifications-dot"></span><div><small>Servicio de notificaciones</small><strong id="notifications-status">Comprobando…</strong><a href="http://localhost:20003/health" target="_blank" rel="noreferrer">API · puerto 20003 ↗</a></div></article>
+      <article class="status-card"><span class="dot" id="database-dot"></span><div><small>Base de datos</small><strong>MySQL 8.4</strong><span>Puerto del host: 20001</span></div></article>
+    </section>
+    <section class="layout">
+      <article class="panel">
+        <div class="panel-heading"><div><p class="eyebrow">CATÁLOGO</p><h2>Productos</h2></div><button id="refresh-products" class="button secondary">Actualizar</button></div>
+        <form id="product-form" class="form-grid">
+          <label>Nombre<input name="name" required maxlength="120" placeholder="Ej. Teclado USB"></label>
+          <label>Descripción<input name="description" placeholder="Descripción breve"></label>
+          <label>Cantidad<input name="quantity" type="number" min="0" step="1" value="1" required></label>
+          <label>Precio (MXN)<input name="price" type="number" min="0" step="0.01" value="0" required></label>
+          <button class="button primary" type="submit">＋ Registrar producto</button>
+        </form>
+        <p id="product-message" class="message" role="status"></p>
+        <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Acción</th></tr></thead><tbody id="products-body"><tr><td colspan="4">Cargando productos…</td></tr></tbody></table></div>
+      </article>
+      <article class="panel">
+        <div class="panel-heading"><div><p class="eyebrow">ACTIVIDAD RECIENTE</p><h2>Notificaciones</h2></div><button id="refresh-notifications" class="button secondary">Actualizar</button></div>
+        <p class="muted">Los eventos se generan cuando se crea, modifica o elimina un producto.</p>
+        <div id="notifications-list" class="notifications-list"><p>Cargando notificaciones…</p></div>
+      </article>
+    </section>
+    <footer>Equipo 3 · Inventario y Notificaciones <span>Frontend: 20004 · Inventario: 20002 · Notificaciones: 20003 · MySQL: 20001</span></footer>
+  </main>
+</body>
+</html>
