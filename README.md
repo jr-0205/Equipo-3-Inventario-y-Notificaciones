@@ -1,73 +1,71 @@
 # Equipo 3 — Inventario y Notificaciones
 
-Proyecto de microservicios con Node.js, Express, MySQL y Docker Compose.
+Proyecto académico de microservicios con Node.js, Express, MySQL y Docker Compose.
 
-## Componentes
-- **Inventario** (`inventory`): API REST para consultar, crear, actualizar y eliminar productos.
-- **Notificaciones** (`notifications`): API REST para registrar y consultar eventos/notificaciones.
-- **MySQL 8.4**: persistencia de datos.
-- **Frontend** (`frontend`): interfaz web sencilla para consultar inventario y notificaciones.
+## Componentes y puertos
+- **MySQL 8.4:** `localhost:20001` desde el equipo anfitrión (dentro de Docker usa `mysql:3306`).
+- **Inventario REST:** `http://localhost:20002` (dentro de Docker escucha en `3001`).
+- **Notificaciones REST:** `http://localhost:20003` (dentro de Docker escucha en `3002`).
+- **Frontend Nginx:** `http://localhost:20004` (dentro del contenedor usa el puerto `80`).
 
 ## Requisitos
 - Docker Desktop instalado y en ejecución.
-- Docker Compose v2 (`docker compose`).
+- Docker Compose v2.
 
-## Iniciar el proyecto
+## Iniciar
 Desde la raíz del repositorio:
-
-```bash
-docker compose up -d --build
+```powershell
+git pull --ff-only
+docker compose up --build -d
 docker compose ps
 ```
+Abre `http://localhost:20004`.
 
-Abre la interfaz en http://localhost:8080.
-
-## Puertos
-- Frontend: `http://localhost:8080`
-- Inventario API: `http://localhost:3001`
-- Notificaciones API: `http://localhost:3002`
-- MySQL desde el host: `127.0.0.1:3307`
-
-## Endpoints principales
-### Inventario (`http://localhost:3001`)
-- `GET /health` — estado del servicio
-- `GET /api/products` — listar productos
-- `GET /api/products/:id` — consultar producto
-- `POST /api/products` — crear producto (`name`, `description`, `quantity`, `price`)
-- `PUT /api/products/:id` — actualizar producto
-- `DELETE /api/products/:id` — eliminar producto
-
-### Notificaciones (`http://localhost:3002`)
-- `GET /health` — estado del servicio
-- `GET /api/notifications` — listar notificaciones
-- `POST /api/notifications` — registrar notificación (`service`, `message`, `type` opcional)
-
-## Ejemplos con PowerShell
+## Pruebas de salud
 ```powershell
-Invoke-RestMethod http://localhost:3001/health
-Invoke-RestMethod http://localhost:3001/api/products
-Invoke-RestMethod http://localhost:3002/api/notifications
+Invoke-RestMethod http://localhost:20002/health
+Invoke-RestMethod http://localhost:20003/health
+Invoke-RestMethod http://localhost:20002/api/products
+Invoke-RestMethod http://localhost:20003/api/notifications
 ```
 
-Crear un producto:
+## Endpoints de inventario
+Base URL: `http://localhost:20002`
+- `GET /health` — estado del servicio y conexión a MySQL.
+- `GET /api/products` — listar productos.
+- `GET /api/products/:id` — consultar un producto.
+- `POST /api/products` — crear producto (`name`, `description`, `quantity`, `price`).
+- `PUT /api/products/:id` — actualizar producto.
+- `DELETE /api/products/:id` — eliminar producto.
+
+Ejemplo de creación desde PowerShell:
 ```powershell
-$body = @{ name = 'Teclado'; description = 'Teclado USB'; quantity = 12; price = 249.99 } | ConvertTo-Json
-Invoke-RestMethod -Method Post -Uri http://localhost:3001/api/products -ContentType 'application/json' -Body $body
+$body = @{ name = 'Teclado de prueba'; description = 'Registrado desde PowerShell'; quantity = 10; price = 250 } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://localhost:20002/api/products -ContentType 'application/json' -Body $body
 ```
 
-Registrar una notificación:
+## Endpoints de notificaciones
+Base URL: `http://localhost:20003`
+- `GET /health` — estado del servicio y conexión a MySQL.
+- `GET /api/notifications` — listar notificaciones (`?limit=30` opcional).
+- `POST /api/notifications` — crear notificación (`service`, `message`, `type` opcional).
+- `DELETE /api/notifications/:id` — eliminar una notificación.
+
+Ejemplo:
 ```powershell
-$body = @{ service = 'inventory'; message = 'Producto actualizado'; type = 'info' } | ConvertTo-Json
-Invoke-RestMethod -Method Post -Uri http://localhost:3002/api/notifications -ContentType 'application/json' -Body $body
+$body = @{ service = 'manual'; message = 'Prueba de notificación'; type = 'info' } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://localhost:20003/api/notifications -ContentType 'application/json' -Body $body
 ```
 
-## Detener los servicios
-```bash
+## Registros y apagado
+```powershell
+docker compose logs --tail=100 inventory notifications frontend mysql
 docker compose down
 ```
-Para eliminar también los datos de MySQL (acción destructiva): `docker compose down -v`.
+`docker compose down -v` elimina también el volumen de MySQL y los datos guardados; úsalo solo si deseas borrar la base de datos.
 
-## Configuración
-Los valores de ejemplo están en `.env.example`. Docker Compose usa valores locales predeterminados para facilitar la práctica. Cambia las contraseñas antes de cualquier despliegue real.
-
-> Estado: código y configuración preparados; realizar pruebas de ejecución e integración antes de considerar validado el proyecto.
+## Notas
+- El frontend llama a los puertos del host `20002` y `20003`; por ello está pensado para abrirse en el mismo equipo que ejecuta Docker.
+- La comunicación entre microservicios dentro de Docker usa `http://notifications:3002`.
+- Si ya existía el volumen `mysql_data`, MySQL conserva los datos previos; el script de inicialización solo se ejecuta al crear una base de datos inicializada nueva.
+- Antes de desplegar en un entorno real, cambia las contraseñas de ejemplo del archivo `.env`/`.env.example`.
