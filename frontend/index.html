@@ -27,7 +27,7 @@ function readApi(){
   if(API_HOST!=='localhost'&&API_HOST!=='127.0.0.1'){
     for(const key of ['inventory','notifications']){
       if(typeof saved[key]==='string'){
-        try{const u=new URL(saved[key]);if(['localhost','127.0.0.1','::1'].includes(u.hostname)){u.hostname=API_HOST;saved[key]=u.toString().replace(/\\/$/,'')}}catch{}
+        try{const u=new URL(saved[key]);if(['localhost','127.0.0.1','::1'].includes(u.hostname)){u.hostname=API_HOST;saved[key]=u.toString()}}catch{}
       }
     }
   }
