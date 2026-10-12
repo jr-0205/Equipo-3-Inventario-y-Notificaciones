@@ -17,7 +17,7 @@
 window.addEventListener('error',e=>{const el=document.getElementById('toast');if(el){el.textContent='Error de JavaScript: '+(e.message||'error desconocido');el.className='toast show error'}});
 window.addEventListener('unhandledrejection',e=>{const el=document.getElementById('toast');if(el){el.textContent='Error de operación: '+(e.reason?.message||String(e.reason||'error desconocido'));el.className='toast show error'}});
 const API_HOST=window.location.hostname||'localhost';
-const DEFAULT_API={orders:'http://localhost:3003',clients:`${window.location.protocol}//${window.location.host}/api/clientes`,products:`${window.location.protocol}//${window.location.host}/api/productos`,payments:'http://localhost:3003',inventory:`${window.location.protocol}//${window.location.hostname}:20002`,notifications:`${window.location.protocol}//${window.location.hostname}:20003`};
+const DEFAULT_API={orders:'http://localhost:3003',clients:`${window.location.protocol}//${window.location.host}/api`,products:`${window.location.protocol}//${window.location.host}/api`,payments:'http://localhost:3003',inventory:`${window.location.protocol}//${window.location.hostname}:20002`,notifications:`${window.location.protocol}//${window.location.hostname}:20003`};
 function readApi(){
   let saved={};
   try{saved=JSON.parse(localStorage.getItem('campus-core-api')||'{}')||{}}catch{}
@@ -31,6 +31,10 @@ function readApi(){
       }
     }
   }
+  // Clientes y productos pasan por el proxy Nginx del mismo origen para evitar CORS.
+  // Sobrescribe las direcciones directas antiguas guardadas en este navegador.
+  saved.clients=DEFAULT_API.clients;
+  saved.products=DEFAULT_API.products;
   // Las API del Equipo 1 son servicios directos, no rutas del gateway del Equipo 2.
   // Migra las bases predeterminadas antiguas que apuntaban al puerto 3003.
   for(const [key,port] of [['clients','3001'],['products','3002']]){
