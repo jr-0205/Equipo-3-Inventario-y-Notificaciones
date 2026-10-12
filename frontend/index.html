@@ -17,7 +17,7 @@
 window.addEventListener('error',e=>{const el=document.getElementById('toast');if(el){el.textContent='Error de JavaScript: '+(e.message||'error desconocido');el.className='toast show error'}});
 window.addEventListener('unhandledrejection',e=>{const el=document.getElementById('toast');if(el){el.textContent='Error de operación: '+(e.reason?.message||String(e.reason||'error desconocido'));el.className='toast show error'}});
 const API_HOST=window.location.hostname||'localhost';
-const DEFAULT_API={orders:'http://localhost:3003',clients:`http://${API_HOST}:3001`,products:`http://${API_HOST}:3002`,payments:'http://localhost:3003',inventory:`http://${API_HOST}:20002`,notifications:`http://${API_HOST}:20003`};
+const DEFAULT_API={orders:'http://localhost:3003',clients:`${window.location.protocol}//${window.location.host}/api/clientes`,products:`${window.location.protocol}//${window.location.host}/api/productos`,payments:'http://localhost:3003',inventory:`${window.location.protocol}//${window.location.hostname}:20002`,notifications:`${window.location.protocol}//${window.location.hostname}:20003`};
 function readApi(){
   let saved={};
   try{saved=JSON.parse(localStorage.getItem('campus-core-api')||'{}')||{}}catch{}
