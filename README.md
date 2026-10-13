@@ -1,82 +1,68 @@
 # Equipo 3 — Inventario y Notificaciones
 
-Proyecto académico de microservicios con Node.js, Express, MySQL y Docker Compose.
+Microservicios REST con Node.js, Express, MySQL y Docker Compose. Este repositorio contiene únicamente las API y la base de datos. La aplicación React se desarrollará en un repositorio independiente.
 
-## Componentes y puertos
-- **MySQL 8.4:** `localhost:20001` desde el equipo anfitrión (dentro de Docker usa `mysql:3306`).
-- **Inventario REST:** `http://localhost:20002` (dentro de Docker escucha en `3001`).
-- **Notificaciones REST:** `http://localhost:20003` (dentro de Docker escucha en `3002`).
-- **Frontend Nginx:** `http://localhost:20004` (dentro del contenedor usa el puerto `80`).
+## Servicios y puertos publicados
 
-## Requisitos
-- Docker Desktop instalado y en ejecución.
-- Docker Compose v2.
+- Inventario: `http://localhost:2506` (puerto interno del contenedor: 3001).
+- Notificaciones: `http://localhost:2507` (puerto interno del contenedor: 3002).
+- MySQL solo es accesible dentro de la red privada de Docker en `mysql:3306`; no se publica un puerto del host.
 
-## Iniciar
-Desde la raíz del repositorio:
+## Configurar e iniciar
+
+Copia `.env.example` a `.env`, cambia ambas contraseñas y ejecuta desde la raíz:
+
 ```powershell
-git pull --ff-only
 docker compose up --build -d
 docker compose ps
+docker compose logs --tail=100 inventory notifications mysql
 ```
-Abre `http://localhost:20004`.
 
-### Integración con las API del Equipo 1
-- Campus Core consulta Clientes y Productos a través de un proxy Nginx del mismo origen (`/api/clientes` y `/api/productos`). Esto evita que el navegador bloquee las llamadas por CORS.
-- En `nginx.conf`, la IP destino del Equipo 1 está configurada como `192.168.1.148`, con los puertos `3001` (Clientes) y `3002` (Productos). Si cambia la IP del Equipo 1, actualízala en ambos bloques `proxy_pass`.
-- No hace falta abrir los puertos 3001/3002 desde el navegador del usuario; el contenedor Nginx del Equipo 3 debe poder alcanzar esa IP y esos puertos por la red.
+Para detener: `docker compose down`. No uses `docker compose down -v` salvo que quieras borrar también los datos persistentes.
 
-### Acceso desde otra computadora de la red
-- Abre Campus Core usando la IP LAN del equipo donde corre Docker, por ejemplo `http://192.168.1.234:20004` (usa la IP real de ese equipo).
-- El frontend integrado calcula automáticamente las direcciones de Inventario (`:20002`) y Notificaciones (`:20003`) a partir del hostname con el que se abrió la página.
-- Si el navegador ya tenía direcciones antiguas guardadas, el frontend migra `localhost`/`127.0.0.1` para esos dos servicios; conserva las direcciones personalizadas de los gateways de los otros equipos.
-- Si no conecta, permite los puertos `20002`, `20003` y `20004` en el firewall del equipo servidor y verifica `docker compose ps`.
+## Contrato de campos
 
-## Pruebas de salud
+Todos los campos de negocio se nombran en español:
+
+- Inventario/producto: `id`, `nombre`, `descripcion`, `stock`, `precio`, `creado_en`, `actualizado_en`.
+- Notificación: `id`, `servicio`, `mensaje`, `tipo`, `creado_en`.
+
+Inventario es la fuente de verdad para las existencias; `stock` es la cantidad registrada.
+
+## API de Inventario
+
+Base URL: `http://localhost:2506`
+
+- `GET /health`
+- `GET /api/products`
+- `GET /api/products/:id`
+- `POST /api/products` — recibe `nombre`, `descripcion`, `stock`, `precio`.
+- `PUT /api/products/:id` — actualiza esos campos.
+- `DELETE /api/products/:id`
+
+Prueba desde PowerShell:
+
 ```powershell
-Invoke-RestMethod http://localhost:20002/health
-Invoke-RestMethod http://localhost:20003/health
-Invoke-RestMethod http://localhost:20002/api/products
-Invoke-RestMethod http://localhost:20003/api/notifications
+$body = @{ nombre = 'Teclado de prueba'; descripcion = 'Prueba de API'; stock = 10; precio = 250 } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://localhost:2506/api/products -ContentType 'application/json' -Body $body
 ```
 
-## Endpoints de inventario
-Base URL: `http://localhost:20002`
-- `GET /health` — estado del servicio y conexión a MySQL.
-- `GET /api/products` — listar productos.
-- `GET /api/products/:id` — consultar un producto.
-- `POST /api/products` — crear producto (`name`, `description`, `quantity`, `price`).
-- `PUT /api/products/:id` — actualizar producto.
-- `DELETE /api/products/:id` — eliminar producto.
+## API de Notificaciones
 
-Ejemplo de creación desde PowerShell:
+Base URL: `http://localhost:2507`
+
+- `GET /health`
+- `GET /api/notifications?limite=30`
+- `POST /api/notifications` — recibe `servicio`, `mensaje`, `tipo`.
+- `DELETE /api/notifications/:id`
+
+Prueba desde PowerShell:
+
 ```powershell
-$body = @{ name = 'Teclado de prueba'; description = 'Registrado desde PowerShell'; quantity = 10; price = 250 } | ConvertTo-Json
-Invoke-RestMethod -Method Post -Uri http://localhost:20002/api/products -ContentType 'application/json' -Body $body
+$body = @{ servicio = 'pedidos'; mensaje = 'Compra procesada'; tipo = 'success' } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://localhost:2507/api/notifications -ContentType 'application/json' -Body $body
 ```
 
-## Endpoints de notificaciones
-Base URL: `http://localhost:20003`
-- `GET /health` — estado del servicio y conexión a MySQL.
-- `GET /api/notifications` — listar notificaciones (`?limit=30` opcional).
-- `POST /api/notifications` — crear notificación (`service`, `message`, `type` opcional).
-- `DELETE /api/notifications/:id` — eliminar una notificación.
+## Red y seguridad
 
-Ejemplo:
-```powershell
-$body = @{ service = 'manual'; message = 'Prueba de notificación'; type = 'info' } | ConvertTo-Json
-Invoke-RestMethod -Method Post -Uri http://localhost:20003/api/notifications -ContentType 'application/json' -Body $body
-```
-
-## Registros y apagado
-```powershell
-docker compose logs --tail=100 inventory notifications frontend mysql
-docker compose down
-```
-`docker compose down -v` elimina también el volumen de MySQL y los datos guardados; úsalo solo si deseas borrar la base de datos.
-
-## Notas
-- El frontend llama a los puertos del host `20002` y `20003`; por ello está pensado para abrirse en el mismo equipo que ejecuta Docker.
-- La comunicación entre microservicios dentro de Docker usa `http://notifications:3002`.
-- Si ya existía el volumen `mysql_data`, MySQL conserva los datos previos; el script de inicialización solo se ejecuta al crear una base de datos inicializada nueva.
-- Antes de desplegar en un entorno real, cambia las contraseñas de ejemplo del archivo `.env`/`.env.example`.
+Usa la IPv4 LAN del equipo servidor desde las otras computadoras y permite los puertos TCP 2506 y 2507 en el firewall. MySQL no necesita exponerse a la red local.
