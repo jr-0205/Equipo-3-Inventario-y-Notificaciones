@@ -4,7 +4,7 @@ const mysql = require('mysql2/promise');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 const port = Number(process.env.PORT || 3002);
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -19,36 +19,33 @@ const pool = mysql.createPool({
 app.get('/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
-    res.json({ service: 'notifications', status: 'ok' });
+    res.json({ servicio: 'notificaciones', estado: 'ok' });
   } catch (e) {
-    res.status(503).json({ service: 'notifications', status: 'error', message: e.message });
+    res.status(503).json({ servicio: 'notificaciones', estado: 'error', mensaje: e.message });
   }
 });
 
 app.get('/api/notifications', async (req, res) => {
-  const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 200);
+  const limite = Math.min(Math.max(Number.parseInt(req.query.limite, 10) || 50, 1), 200);
   try {
-    const [rows] = await pool.execute('SELECT * FROM notifications ORDER BY id DESC LIMIT ?', [limit]);
+    const [rows] = await pool.execute('SELECT id, servicio, mensaje, tipo, creado_en FROM notifications ORDER BY id DESC LIMIT ?', [limite]);
     res.json(rows);
   } catch (e) {
-    res.status(500).json({ error: 'No se pudieron consultar las notificaciones', detail: e.message });
+    res.status(500).json({ error: 'No se pudieron consultar las notificaciones', detalle: e.message });
   }
 });
 
 app.post('/api/notifications', async (req, res) => {
-  const { service = 'app', message, type = 'info' } = req.body || {};
-  if (!message || typeof message !== 'string') {
-    return res.status(400).json({ error: 'message es obligatorio y debe ser texto' });
-  }
+  const servicio = String(req.body?.servicio || 'aplicacion').trim();
+  const mensaje = req.body?.mensaje;
+  const tipo = String(req.body?.tipo || 'info').trim();
+  if (typeof mensaje !== 'string' || !mensaje.trim()) return res.status(400).json({ error: 'mensaje es obligatorio y debe ser texto' });
   try {
-    const [result] = await pool.execute(
-      'INSERT INTO notifications (service, message, type) VALUES (?, ?, ?)',
-      [String(service), message, String(type)]
-    );
-    const [rows] = await pool.execute('SELECT * FROM notifications WHERE id = ?', [result.insertId]);
+    const [result] = await pool.execute('INSERT INTO notifications (servicio, mensaje, tipo) VALUES (?, ?, ?)', [servicio, mensaje.trim(), tipo]);
+    const [rows] = await pool.execute('SELECT id, servicio, mensaje, tipo, creado_en FROM notifications WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (e) {
-    res.status(500).json({ error: 'No se pudo registrar la notificación', detail: e.message });
+    res.status(500).json({ error: 'No se pudo registrar la notificación', detalle: e.message });
   }
 });
 
@@ -56,10 +53,10 @@ app.delete('/api/notifications/:id', async (req, res) => {
   try {
     const [result] = await pool.execute('DELETE FROM notifications WHERE id = ?', [req.params.id]);
     if (!result.affectedRows) return res.status(404).json({ error: 'Notificación no encontrada' });
-    res.json({ message: 'Notificación eliminada correctamente' });
+    res.json({ mensaje: 'Notificación eliminada correctamente' });
   } catch (e) {
-    res.status(500).json({ error: 'No se pudo eliminar la notificación', detail: e.message });
+    res.status(500).json({ error: 'No se pudo eliminar la notificación', detalle: e.message });
   }
 });
 
-app.listen(port, () => console.log(`Notifications service escuchando en puerto ${port}`));
+app.listen(port, () => console.log(`Microservicio de Notificaciones escuchando en ${port}`));
