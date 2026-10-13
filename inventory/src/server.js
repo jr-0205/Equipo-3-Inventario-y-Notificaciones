@@ -52,7 +52,7 @@ app.get('/health', async (_req, res) => {
 
 app.get('/api/products', async (_req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, nombre, descripcion, stock, precio, creado_en, actualizado_en FROM products ORDER BY id DESC');
+    const [rows] = await pool.query('SELECT id, name AS nombre, description AS descripcion, quantity AS stock, price AS precio, created_at AS creado_en, updated_at AS actualizado_en FROM products ORDER BY id DESC');
     res.json(rows);
   } catch (e) {
     res.status(500).json({ error: 'No se pudo consultar el inventario', detalle: e.message });
@@ -61,7 +61,7 @@ app.get('/api/products', async (_req, res) => {
 
 app.get('/api/products/:id', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT id, nombre, descripcion, stock, precio, creado_en, actualizado_en FROM products WHERE id = ?', [req.params.id]);
+    const [rows] = await pool.execute('SELECT id, name AS nombre, description AS descripcion, quantity AS stock, price AS precio, created_at AS creado_en, updated_at AS actualizado_en FROM products WHERE id = ?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Producto no encontrado' });
     res.json(rows[0]);
   } catch (e) {
@@ -73,8 +73,8 @@ app.post('/api/products', async (req, res) => {
   const producto = validarProducto(req.body || {});
   if (typeof producto === 'string') return res.status(400).json({ error: producto });
   try {
-    const [result] = await pool.execute('INSERT INTO products (nombre, descripcion, stock, precio) VALUES (?, ?, ?, ?)', [producto.nombre, producto.descripcion, producto.stock, producto.precio]);
-    const [rows] = await pool.execute('SELECT id, nombre, descripcion, stock, precio, creado_en, actualizado_en FROM products WHERE id = ?', [result.insertId]);
+    const [result] = await pool.execute('INSERT INTO products (name, description, quantity, price) VALUES (?, ?, ?, ?)', [producto.nombre, producto.descripcion, producto.stock, producto.precio]);
+    const [rows] = await pool.execute('SELECT id, name AS nombre, description AS descripcion, quantity AS stock, price AS precio, created_at AS creado_en, updated_at AS actualizado_en FROM products WHERE id = ?', [result.insertId]);
     await notify(`Producto creado: ${producto.nombre}`, 'success');
     res.status(201).json(rows[0]);
   } catch (e) {
@@ -86,9 +86,9 @@ app.put('/api/products/:id', async (req, res) => {
   const producto = validarProducto(req.body || {});
   if (typeof producto === 'string') return res.status(400).json({ error: producto });
   try {
-    const [result] = await pool.execute('UPDATE products SET nombre=?, descripcion=?, stock=?, precio=? WHERE id=?', [producto.nombre, producto.descripcion, producto.stock, producto.precio, req.params.id]);
+    const [result] = await pool.execute('UPDATE products SET name=?, description=?, quantity=?, price=? WHERE id=?', [producto.nombre, producto.descripcion, producto.stock, producto.precio, req.params.id]);
     if (!result.affectedRows) return res.status(404).json({ error: 'Producto no encontrado' });
-    const [rows] = await pool.execute('SELECT id, nombre, descripcion, stock, precio, creado_en, actualizado_en FROM products WHERE id = ?', [req.params.id]);
+    const [rows] = await pool.execute('SELECT id, name AS nombre, description AS descripcion, quantity AS stock, price AS precio, created_at AS creado_en, updated_at AS actualizado_en FROM products WHERE id = ?', [req.params.id]);
     await notify(`Producto actualizado: ${producto.nombre}`, 'info');
     res.json(rows[0]);
   } catch (e) {
@@ -98,7 +98,7 @@ app.put('/api/products/:id', async (req, res) => {
 
 app.delete('/api/products/:id', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT nombre FROM products WHERE id=?', [req.params.id]);
+    const [rows] = await pool.execute('SELECT name AS nombre FROM products WHERE id=?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Producto no encontrado' });
     await pool.execute('DELETE FROM products WHERE id=?', [req.params.id]);
     await notify(`Producto eliminado: ${rows[0].nombre}`, 'warning');
