@@ -1,6 +1,6 @@
 # Equipo 3 — Inventario y Notificaciones
 
-Microservicios REST con Node.js, Express, MySQL y Docker Compose. Este repositorio contiene únicamente las API y la base de datos. La aplicación React se desarrollará en un repositorio independiente.
+Microservicios REST con Node.js, Express, MySQL y Docker Compose. Este repositorio contiene las API y la base de datos.
 
 ## Servicios y puertos publicados
 
