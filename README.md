@@ -10,12 +10,13 @@ Microservicios REST con Node.js, Express, MySQL y Docker Compose. Este repositor
 
 ## Configurar e iniciar
 
-Copia `.env.example` a `.env`, cambia ambas contraseñas y ejecuta desde la raíz:
+Copia `.env.example` a `.env`, cambia ambas contraseñas y ejecuta desde la raíz. En Debian/Linux usa `cp .env.example .env && nano .env`; en PowerShell puedes usar `Copy-Item .env.example .env`. No reutilices las contraseñas de ejemplo en una red real.
 
 ```powershell
 docker compose up --build -d
 docker compose ps
 docker compose logs --tail=100 inventory notifications mysql
+docker compose ps
 ```
 
 Para detener: `docker compose down`. No uses `docker compose down -v` salvo que quieras borrar también los datos persistentes.
@@ -28,6 +29,8 @@ Todos los campos de negocio se nombran en español:
 - Notificación: `id`, `servicio`, `mensaje`, `tipo`, `creado_en`.
 
 Inventario es la fuente de verdad para las existencias; `stock` es la cantidad registrada.
+
+Si algún servicio no aparece como `healthy`, revisa primero los logs de MySQL y confirma que el archivo `.env` existe y define `MYSQL_ROOT_PASSWORD` y `MYSQL_PASSWORD`. Los puertos publicados para integrar con los demás equipos son Inventario `2506` y Notificaciones `2507`.
 
 ## API de Inventario
 
