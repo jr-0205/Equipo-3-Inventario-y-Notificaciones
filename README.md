@@ -10,16 +10,20 @@ Microservicios REST con Node.js, Express, MySQL y Docker Compose. Este repositor
 
 ## Configurar e iniciar
 
-Copia `.env.example` a `.env`, cambia ambas contraseñas y ejecuta desde la raíz. En Debian/Linux usa `cp .env.example .env && nano .env`; en PowerShell puedes usar `Copy-Item .env.example .env`. No reutilices las contraseñas de ejemplo en una red real.
+Copia `.env.example` a `.env`, cambia ambas contraseñas y ejecuta desde la raíz. En Debian/Linux usa `cp .env.example .env && nano .env`; en PowerShell puedes usar `Copy-Item .env.example .env`. No reutilices las contraseñas de ejemplo en una red real. Mantén las credenciales de `.env` consistentes: cambiar `MYSQL_ROOT_PASSWORD` después de inicializar el volumen no cambia la contraseña de root guardada en MySQL.
 
-```powershell
+```bash
+docker compose config --quiet
 docker compose up --build -d
-docker compose ps
-docker compose logs --tail=100 inventory notifications mysql
-docker compose ps
+docker compose ps -a
+docker compose logs --tail=100 mysql db-setup notifications inventory
+curl -i http://localhost:2507/health
+curl -i http://localhost:2506/health
 ```
 
-Para detener: `docker compose down`. No uses `docker compose down -v` salvo que quieras borrar también los datos persistentes.
+`db-setup` debe terminar con código `0` y mostrar `Usuario y permisos de la aplicación verificados.`. Si la autenticación falla, el contenedor ahora también falla explícitamente en lugar de imprimir un éxito falso.
+
+Para detener sin borrar datos: `docker compose down`. **Solo si quieres reiniciar MySQL desde cero y perder todos los datos**, ejecuta `docker compose down -v` y después `docker compose up --build -d`; esto elimina el volumen persistente de esta base de datos.
 
 ## Contrato de campos
 
