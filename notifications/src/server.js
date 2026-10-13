@@ -28,7 +28,7 @@ app.get('/health', async (_req, res) => {
 app.get('/api/notifications', async (req, res) => {
   const limite = Math.min(Math.max(Number.parseInt(req.query.limite, 10) || 50, 1), 200);
   try {
-    const [rows] = await pool.execute('SELECT id, servicio, mensaje, tipo, creado_en FROM notifications ORDER BY id DESC LIMIT ?', [limite]);
+    const [rows] = await pool.execute('SELECT id, service AS servicio, message AS mensaje, type AS tipo, created_at AS creado_en FROM notifications ORDER BY id DESC LIMIT ?', [limite]);
     res.json(rows);
   } catch (e) {
     res.status(500).json({ error: 'No se pudieron consultar las notificaciones', detalle: e.message });
@@ -41,8 +41,8 @@ app.post('/api/notifications', async (req, res) => {
   const tipo = String(req.body?.tipo || 'info').trim();
   if (typeof mensaje !== 'string' || !mensaje.trim()) return res.status(400).json({ error: 'mensaje es obligatorio y debe ser texto' });
   try {
-    const [result] = await pool.execute('INSERT INTO notifications (servicio, mensaje, tipo) VALUES (?, ?, ?)', [servicio, mensaje.trim(), tipo]);
-    const [rows] = await pool.execute('SELECT id, servicio, mensaje, tipo, creado_en FROM notifications WHERE id = ?', [result.insertId]);
+    const [result] = await pool.execute('INSERT INTO notifications (service, message, type) VALUES (?, ?, ?)', [servicio, mensaje.trim(), tipo]);
+    const [rows] = await pool.execute('SELECT id, service AS servicio, message AS mensaje, type AS tipo, created_at AS creado_en FROM notifications WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (e) {
     res.status(500).json({ error: 'No se pudo registrar la notificación', detalle: e.message });
