@@ -25,7 +25,9 @@ curl -i http://localhost:2506/health
 curl -i http://localhost:2506/api/products
 ```
 
-En `.env`, configura `PRODUCTOS_URL=http://host.docker.internal:2502` si el Equipo 1 corre en el mismo host Docker. Si está en otra computadora, usa su IPv4, por ejemplo `PRODUCTOS_URL=http://192.168.1.51:2502`. La dirección debe ser alcanzable desde el contenedor de Inventario.
+En `.env`, configura todas las URLs de servicios usando nombres DNS estables o las IP actuales. Para este equipo, `PRODUCTOS_URL` debe apuntar al host del Equipo 1 y al puerto 2502. No uses `host.docker.internal` para llegar a otra computadora.
+
+Consulta `ROUTES.md` para los endpoints oficiales. Al cambiar la configuración, recrea los servicios con `docker compose up --build -d`.
 
 `db-setup` debe terminar con código 0. No ejecutes `docker compose down -v` salvo que aceptes borrar todos los datos persistentes de MySQL.
 
