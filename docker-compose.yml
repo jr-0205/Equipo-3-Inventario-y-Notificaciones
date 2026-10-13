@@ -68,7 +68,7 @@ services:
       DB_NAME: ${MYSQL_DATABASE:-team3_inventory}
       DB_USER: ${MYSQL_USER:-team3_app}
       DB_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en .env}
-      PRODUCTOS_URL: ${PRODUCTOS_URL:-http://host.docker.internal:2502}
+      PRODUCTOS_URL: ${PRODUCTOS_URL:-http://192.168.1.251:2502}
       NOTIFICATIONS_URL: http://notifications:3002
     ports:
       - "2506:3001"
