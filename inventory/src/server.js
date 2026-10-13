@@ -4,7 +4,7 @@ const mysql = require('mysql2/promise');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 const port = Number(process.env.PORT || 3001);
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -16,65 +16,96 @@ const pool = mysql.createPool({
   connectionLimit: 10
 });
 
-async function notify(message, type = 'info') {
+async function notify(mensaje, tipo = 'info') {
   const base = process.env.NOTIFICATIONS_URL;
   if (!base) return;
   try {
     await fetch(`${base}/api/notifications`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ service: 'inventory', message, type })
+      body: JSON.stringify({ servicio: 'inventario', mensaje, tipo })
     });
   } catch (error) {
     console.error('No se pudo enviar la notificación:', error.message);
   }
 }
 
+function validarProducto(body) {
+  const nombre = String(body?.nombre ?? '').trim();
+  const descripcion = String(body?.descripcion ?? '');
+  const stock = Number(body?.stock);
+  const precio = Number(body?.precio);
+  if (!nombre) return 'nombre es obligatorio';
+  if (!Number.isInteger(stock) || stock < 0) return 'stock debe ser un entero mayor o igual a cero';
+  if (!Number.isFinite(precio) || precio < 0) return 'precio debe ser un número no negativo';
+  return { nombre, descripcion, stock, precio };
+}
+
 app.get('/health', async (_req, res) => {
-  try { await pool.query('SELECT 1'); res.json({ service: 'inventory', status: 'ok' }); }
-  catch (e) { res.status(503).json({ service: 'inventory', status: 'error', message: e.message }); }
+  try {
+    await pool.query('SELECT 1');
+    res.json({ servicio: 'inventario', estado: 'ok' });
+  } catch (e) {
+    res.status(503).json({ servicio: 'inventario', estado: 'error', mensaje: e.message });
+  }
 });
+
 app.get('/api/products', async (_req, res) => {
-  try { const [rows] = await pool.query('SELECT * FROM products ORDER BY id DESC'); res.json(rows); }
-  catch (e) { res.status(500).json({ error: 'No se pudieron consultar los productos', detail: e.message }); }
+  try {
+    const [rows] = await pool.query('SELECT id, nombre, descripcion, stock, precio, creado_en, actualizado_en FROM products ORDER BY id DESC');
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: 'No se pudo consultar el inventario', detalle: e.message });
+  }
 });
+
 app.get('/api/products/:id', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [req.params.id]);
+    const [rows] = await pool.execute('SELECT id, nombre, descripcion, stock, precio, creado_en, actualizado_en FROM products WHERE id = ?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Producto no encontrado' });
     res.json(rows[0]);
-  } catch (e) { res.status(500).json({ error: 'No se pudo consultar el producto', detail: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: 'No se pudo consultar el producto', detalle: e.message });
+  }
 });
+
 app.post('/api/products', async (req, res) => {
-  const { name, description = '', quantity = 0, price = 0 } = req.body || {};
-  if (!name || !Number.isInteger(Number(quantity)) || Number(quantity) < 0 || !Number.isFinite(Number(price)) || Number(price) < 0)
-    return res.status(400).json({ error: 'name es obligatorio; quantity y price deben ser números no negativos' });
+  const producto = validarProducto(req.body || {});
+  if (typeof producto === 'string') return res.status(400).json({ error: producto });
   try {
-    const [result] = await pool.execute('INSERT INTO products (name, description, quantity, price) VALUES (?, ?, ?, ?)', [name, description, Number(quantity), Number(price)]);
-    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [result.insertId]);
-    await notify(`Producto creado: ${name}`, 'success');
+    const [result] = await pool.execute('INSERT INTO products (nombre, descripcion, stock, precio) VALUES (?, ?, ?, ?)', [producto.nombre, producto.descripcion, producto.stock, producto.precio]);
+    const [rows] = await pool.execute('SELECT id, nombre, descripcion, stock, precio, creado_en, actualizado_en FROM products WHERE id = ?', [result.insertId]);
+    await notify(`Producto creado: ${producto.nombre}`, 'success');
     res.status(201).json(rows[0]);
-  } catch (e) { res.status(500).json({ error: 'No se pudo crear el producto', detail: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: 'No se pudo crear el producto', detalle: e.message });
+  }
 });
+
 app.put('/api/products/:id', async (req, res) => {
-  const { name, description = '', quantity, price } = req.body || {};
-  if (!name || !Number.isInteger(Number(quantity)) || Number(quantity) < 0 || !Number.isFinite(Number(price)) || Number(price) < 0)
-    return res.status(400).json({ error: 'name es obligatorio; quantity y price deben ser números no negativos' });
+  const producto = validarProducto(req.body || {});
+  if (typeof producto === 'string') return res.status(400).json({ error: producto });
   try {
-    const [result] = await pool.execute('UPDATE products SET name=?, description=?, quantity=?, price=? WHERE id=?', [name, description, Number(quantity), Number(price), req.params.id]);
+    const [result] = await pool.execute('UPDATE products SET nombre=?, descripcion=?, stock=?, precio=? WHERE id=?', [producto.nombre, producto.descripcion, producto.stock, producto.precio, req.params.id]);
     if (!result.affectedRows) return res.status(404).json({ error: 'Producto no encontrado' });
-    await notify(`Producto actualizado: ${name}`, 'info');
-    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [req.params.id]);
+    const [rows] = await pool.execute('SELECT id, nombre, descripcion, stock, precio, creado_en, actualizado_en FROM products WHERE id = ?', [req.params.id]);
+    await notify(`Producto actualizado: ${producto.nombre}`, 'info');
     res.json(rows[0]);
-  } catch (e) { res.status(500).json({ error: 'No se pudo actualizar el producto', detail: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: 'No se pudo actualizar el producto', detalle: e.message });
+  }
 });
+
 app.delete('/api/products/:id', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT name FROM products WHERE id=?', [req.params.id]);
+    const [rows] = await pool.execute('SELECT nombre FROM products WHERE id=?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Producto no encontrado' });
     await pool.execute('DELETE FROM products WHERE id=?', [req.params.id]);
-    await notify(`Producto eliminado: ${rows[0].name}`, 'warning');
-    res.json({ message: 'Producto eliminado correctamente' });
-  } catch (e) { res.status(500).json({ error: 'No se pudo eliminar el producto', detail: e.message }); }
+    await notify(`Producto eliminado: ${rows[0].nombre}`, 'warning');
+    res.json({ mensaje: 'Producto eliminado correctamente' });
+  } catch (e) {
+    res.status(500).json({ error: 'No se pudo eliminar el producto', detalle: e.message });
+  }
 });
-app.listen(port, () => console.log(`Inventory service escuchando en puerto ${port}`));
+
+app.listen(port, () => console.log(`Microservicio de Inventario escuchando en ${port}`));
