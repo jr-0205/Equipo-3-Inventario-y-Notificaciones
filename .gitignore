@@ -1,5 +1,17 @@
+# Dependencias
 node_modules/
+
+# Configuracion local con contrasenas reales: nunca se versiona, pero .env.example si
 .env
-.DS_Store
+.env.*
+!.env.example
+
+# Registros
 npm-debug.log*
+*.log
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.vscode/
 coverage/

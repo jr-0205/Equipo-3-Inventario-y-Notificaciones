@@ -1,15 +1,20 @@
+name: equipo3
+
 services:
   mysql:
     image: mysql:8.4
+    container_name: equipo3-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en el archivo .env}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-team3_inventory}
       MYSQL_USER: ${MYSQL_USER:-team3_app}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en .env}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en el archivo .env}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks:
+      - equipo3-net
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
@@ -18,48 +23,61 @@ services:
 
   notifications:
     build: ./notifications
+    container_name: equipo3-notifications
     restart: unless-stopped
     environment:
-      PORT: 3002
+      PORT: 3006
       DB_HOST: mysql
       DB_PORT: 3306
       DB_NAME: ${MYSQL_DATABASE:-team3_inventory}
       DB_USER: ${MYSQL_USER:-team3_app}
-      DB_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en .env}
+      DB_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en el archivo .env}
     ports:
-      - "2507:3002"
+      # Puerto publicado (host) : puerto interno del contenedor.
+      - "${NOTIFICACIONES_HOST_PORT:-2507}:3006"
     depends_on:
       mysql:
         condition: service_healthy
+    networks:
+      - equipo3-net
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3002/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3006/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   inventory:
     build: ./inventory
+    container_name: equipo3-inventory
     restart: unless-stopped
     environment:
-      PORT: 3001
+      PORT: 3005
       DB_HOST: mysql
       DB_PORT: 3306
       DB_NAME: ${MYSQL_DATABASE:-team3_inventory}
       DB_USER: ${MYSQL_USER:-team3_app}
-      DB_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en .env}
-      NOTIFICATIONS_URL: http://notifications:3002
+      DB_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en el archivo .env}
+      # Dentro de esta computadora los servicios se ven por nombre de servicio.
+      NOTIFICATIONS_URL: http://notifications:3006
     ports:
-      - "2506:3001"
+      - "${INVENTARIO_HOST_PORT:-2506}:3005"
     depends_on:
       mysql:
         condition: service_healthy
       notifications:
         condition: service_healthy
+    networks:
+      - equipo3-net
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3005/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+networks:
+  # Red interna del Equipo 3: http://mysql:3306 y http://notifications:3006.
+  equipo3-net:
+    driver: bridge
 
 volumes:
   mysql_data:

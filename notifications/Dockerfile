@@ -3,5 +3,5 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --omit=dev
 COPY src ./src
-EXPOSE 3002
+EXPOSE 3006
 CMD ["npm", "start"]

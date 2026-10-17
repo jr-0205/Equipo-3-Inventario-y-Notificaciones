@@ -1,0 +1,172 @@
+{
+  "info": {
+    "_postman_id": "c3d4e5f6-3333-4c4d-9e5f-equipo3inventarionoti",
+    "name": "Equipo 3 - Inventario y Notificaciones",
+    "description": "Colección para probar Inventario (2506) y Notificaciones (2507) con los puertos publicados por Docker Compose.\n\nCambia la variable {{host}} por la IPv4 de la computadora del Equipo 3 (o deja 'localhost' si Postman corre en esa misma máquina).\n\nLas rutas canónicas son /inventario y /notificaciones; las rutas /api/products y /api/notifications se conservan como alias compatibles con el frontend y con las versiones anteriores.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "host",
+      "value": "localhost"
+    }
+  ],
+  "item": [
+    {
+      "name": "Salud",
+      "item": [
+        {
+          "name": "Health inventario",
+          "request": {
+            "method": "GET",
+            "url": "http://{{host}}:2506/health"
+          }
+        },
+        {
+          "name": "Health notificaciones",
+          "request": {
+            "method": "GET",
+            "url": "http://{{host}}:2507/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventario (rutas canonicas)",
+      "item": [
+        {
+          "name": "Listar inventario",
+          "request": {
+            "method": "GET",
+            "url": "http://{{host}}:2506/inventario"
+          }
+        },
+        {
+          "name": "Consultar producto",
+          "request": {
+            "method": "GET",
+            "url": "http://{{host}}:2506/inventario/1"
+          }
+        },
+        {
+          "name": "Crear producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Teclado de prueba\",\n  \"descripcion\": \"Registrado desde Postman\",\n  \"stock\": 10,\n  \"precio\": 250\n}"
+            },
+            "url": "http://{{host}}:2506/inventario"
+          }
+        },
+        {
+          "name": "Actualizar existencia (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Teclado de prueba\",\n  \"descripcion\": \"Existencia ajustada\",\n  \"stock\": 7,\n  \"precio\": 250\n}"
+            },
+            "url": "http://{{host}}:2506/inventario/1"
+          }
+        },
+        {
+          "name": "Eliminar producto",
+          "request": {
+            "method": "DELETE",
+            "url": "http://{{host}}:2506/inventario/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventario (alias /api/products)",
+      "item": [
+        {
+          "name": "Listar por alias",
+          "request": {
+            "method": "GET",
+            "url": "http://{{host}}:2506/api/products"
+          }
+        },
+        {
+          "name": "Crear por alias (campos en ingles)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mouse de prueba\",\n  \"description\": \"Cliente antiguo\",\n  \"quantity\": 5,\n  \"price\": 150\n}"
+            },
+            "url": "http://{{host}}:2506/api/products"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notificaciones (rutas canonicas)",
+      "item": [
+        {
+          "name": "Listar notificaciones",
+          "request": {
+            "method": "GET",
+            "url": "http://{{host}}:2507/notificaciones?limite=30"
+          }
+        },
+        {
+          "name": "Registrar notificacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"servicio\": \"pedidos\",\n  \"mensaje\": \"Compra procesada\",\n  \"tipo\": \"success\"\n}"
+            },
+            "url": "http://{{host}}:2507/notificaciones"
+          }
+        },
+        {
+          "name": "Eliminar notificacion",
+          "request": {
+            "method": "DELETE",
+            "url": "http://{{host}}:2507/notificaciones/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notificaciones (alias /api/notifications)",
+      "item": [
+        {
+          "name": "Listar por alias",
+          "request": {
+            "method": "GET",
+            "url": "http://{{host}}:2507/api/notifications?limit=30"
+          }
+        }
+      ]
+    }
+  ]
+}
