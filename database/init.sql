@@ -1,8 +1,18 @@
+-- Equipo 3 - Inventario (MySQL 8)
+--
+-- Inventario guarda UNICAMENTE las existencias. El nombre, la descripcion y el precio
+-- se leen del catalogo del Equipo 1; la columna `id` es el ID de ese catalogo, para que
+-- Pedidos use el mismo ID al consultar el precio y descontar existencias.
+--
+-- Este script solo se ejecuta la PRIMERA vez que se crea el volumen de MySQL. Si el
+-- volumen ya existia, los cambios de esquema no se vuelven a aplicar.
+
 CREATE DATABASE IF NOT EXISTS team3_inventory;
 USE team3_inventory;
 
 CREATE TABLE IF NOT EXISTS products (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  -- ID del producto en el catalogo del Equipo 1 (no es un ID propio de Inventario).
+  id INT PRIMARY KEY,
   name VARCHAR(120) NOT NULL,
   description TEXT,
   quantity INT NOT NULL DEFAULT 0,
@@ -19,12 +29,12 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO products (name, description, quantity, price)
-SELECT 'Teclado USB', 'Teclado de oficina', 25, 249.99
-WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = 'Teclado USB');
-INSERT INTO products (name, description, quantity, price)
-SELECT 'Mouse inalámbrico', 'Mouse óptico inalámbrico', 40, 179.50
-WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = 'Mouse inalámbrico');
-INSERT INTO products (name, description, quantity, price)
-SELECT 'Monitor 24 pulgadas', 'Monitor para estación de trabajo', 8, 2199.00
-WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = 'Monitor 24 pulgadas');
+-- Datos de ejemplo alineados con el catalogo del Equipo 1
+-- (Productos: 1 = Laptop Dell 12999.00, 2 = Mouse Inalámbrico 349.00).
+INSERT INTO products (id, name, description, quantity, price)
+SELECT 1, 'Laptop Dell', 'Laptop de 15 pulgadas', 8, 12999.00
+WHERE NOT EXISTS (SELECT 1 FROM products WHERE id = 1);
+
+INSERT INTO products (id, name, description, quantity, price)
+SELECT 2, 'Mouse Inalámbrico', 'Mouse óptico inalámbrico', 25, 349.00
+WHERE NOT EXISTS (SELECT 1 FROM products WHERE id = 2);

@@ -16,10 +16,34 @@ services:
     networks:
       - equipo3-net
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 30s
+
+  # Verifica/crea el usuario de la aplicacion y sus permisos. Se ejecuta una vez y
+  # termina con codigo 0; los demas servicios esperan a que concluya.
+  db-setup:
+    image: mysql:8.4
+    container_name: equipo3-db-setup
+    restart: "no"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en el archivo .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-team3_inventory}
+      MYSQL_USER: ${MYSQL_USER:-team3_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en el archivo .env}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        MYSQL_PWD="$${MYSQL_ROOT_PASSWORD}" mysql -hmysql -uroot -e "CREATE DATABASE IF NOT EXISTS $${MYSQL_DATABASE}; CREATE USER IF NOT EXISTS '$${MYSQL_USER}'@'%' IDENTIFIED BY '$${MYSQL_PASSWORD}'; ALTER USER '$${MYSQL_USER}'@'%' IDENTIFIED BY '$${MYSQL_PASSWORD}'; GRANT ALL PRIVILEGES ON $${MYSQL_DATABASE}.* TO '$${MYSQL_USER}'@'%'; FLUSH PRIVILEGES;"
+        echo "Usuario y permisos de la aplicacion verificados."
+    networks:
+      - equipo3-net
 
   notifications:
     build: ./notifications
@@ -34,10 +58,10 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en el archivo .env}
     ports:
       # Puerto publicado (host) : puerto interno del contenedor.
-      - "${NOTIFICACIONES_HOST_PORT:-2507}:3006"
+      - "${NOTIFICACIONES_PORT:-2507}:3006"
     depends_on:
-      mysql:
-        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
     networks:
       - equipo3-net
     healthcheck:
@@ -45,6 +69,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 15s
 
   inventory:
     build: ./inventory
@@ -57,14 +82,20 @@ services:
       DB_NAME: ${MYSQL_DATABASE:-team3_inventory}
       DB_USER: ${MYSQL_USER:-team3_app}
       DB_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en el archivo .env}
-      # Dentro de esta computadora los servicios se ven por nombre de servicio.
-      # El nombre de la variable es el oficial en espanol (NOTIFICACIONES_URL).
+      # Catalogo oficial del Equipo 1: en .env se escribe http://IP-EQUIPO-1:2502.
+      # Si queda vacio, el servicio usa http://host.docker.internal:2502 (Equipo 1 en esta PC).
+      PRODUCTOS_URL: ${PRODUCTOS_URL:-}
+      REQUEST_TIMEOUT_MS: ${REQUEST_TIMEOUT_MS:-10000}
+      # Notificaciones del mismo equipo: se ven por nombre de servicio.
       NOTIFICACIONES_URL: http://notifications:3006
+    extra_hosts:
+      # Permite que host.docker.internal resuelva tambien en Docker sobre Linux.
+      - "host.docker.internal:host-gateway"
     ports:
-      - "${INVENTARIO_HOST_PORT:-2506}:3005"
+      - "${INVENTARIO_PORT:-2506}:3005"
     depends_on:
-      mysql:
-        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
       notifications:
         condition: service_healthy
     networks:
@@ -74,6 +105,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 15s
 
 networks:
   # Red interna del Equipo 3: http://mysql:3306 y http://notifications:3006.
