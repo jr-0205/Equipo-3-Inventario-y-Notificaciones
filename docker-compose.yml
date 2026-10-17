@@ -58,7 +58,8 @@ services:
       DB_USER: ${MYSQL_USER:-team3_app}
       DB_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en el archivo .env}
       # Dentro de esta computadora los servicios se ven por nombre de servicio.
-      NOTIFICATIONS_URL: http://notifications:3006
+      # El nombre de la variable es el oficial en espanol (NOTIFICACIONES_URL).
+      NOTIFICACIONES_URL: http://notifications:3006
     ports:
       - "${INVENTARIO_HOST_PORT:-2506}:3005"
     depends_on:
