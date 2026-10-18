@@ -48,12 +48,30 @@ las existencias (stock) y el registro de notificaciones del sistema.
 ```powershell
 git clone https://github.com/<usuario>/Equipo-3-Inventario-y-Notificaciones.git
 cd Equipo-3-Inventario-y-Notificaciones
-Copy-Item .env.example .env      # CAMBIA las dos contraseñas de MySQL
-# Revisa PRODUCTOS_URL: debe apuntar al Equipo 1 (http://IP-EQUIPO-1:2502)
+node configurar-ips.mjs          # genera el .env (y contraseñas nuevas de MySQL)
 docker compose config --quiet
 docker compose up --build -d
 docker compose ps -a             # espera mysql "healthy" y db-setup con código 0
 ```
+
+### Configurar las direcciones de todos los equipos (`ip-path`)
+
+`ip-path` es la **única fuente de verdad** de las direcciones: se edita una vez y un comando
+genera el `.env` de este repositorio (que es local y no se versiona).
+
+```powershell
+notepad ip-path                  # IP de cada laptop; deja `auto` en esta PC
+node configurar-ips.mjs          # genera el .env y, si faltan, contraseñas nuevas
+node configurar-ips.mjs --probar # además prueba /health de cada dirección
+```
+
+- `auto` significa "ese equipo corre en esta computadora"; para los contenedores se traduce
+  en `host.docker.internal` (el `docker-compose.yml` ya lo habilita con `extra_hosts`).
+- Inventario necesita `EQUIPO1_HOST` para leer el catálogo oficial (IDs, nombres y precios).
+- Las contraseñas de MySQL se generan una sola vez y se conservan en siguientes ejecuciones;
+  antes de sobrescribir un `.env` existente se guarda una copia en `.env.respaldo`.
+- Si los cuatro repositorios están en la misma carpeta, se configura todo de una vez desde la
+  raíz del proyecto con `node configurar-ips.mjs`.
 
 `db-setup` verifica el usuario y los permisos de MySQL y debe terminar con **código 0**; los
 dos servicios esperan a que concluya. El `docker-compose.yml` **exige**
